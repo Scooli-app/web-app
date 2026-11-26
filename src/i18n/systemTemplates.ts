@@ -2,13 +2,14 @@ import type { DocumentTemplate } from "@/shared/types";
 import type { Locale } from "./locales";
 
 /**
- * English copy for the built-in (system) document templates.
+ * English and Brazilian copy for the built-in (system) document templates.
  *
- * Templates are stored in the database in Portuguese only, so without this an
- * English interface shows Portuguese template names, descriptions and section
- * titles. Keyed by the stored Portuguese text (whitespace-normalised, since a
- * few rows carry double spaces). Anything not listed — teachers' own templates
- * included — is shown as stored.
+ * Templates are stored in the database in European Portuguese only, so without
+ * this an English or Brazilian interface shows pt-PT template names,
+ * descriptions and section titles. Keyed by the stored text (whitespace-normalised,
+ * since a few rows carry double spaces). Anything not listed — teachers' own
+ * templates included — is shown as stored. Display only: generation sends the
+ * template id, so the backend keeps reading the stored text.
  */
 const EN: Record<string, string> = {
   // Template names
@@ -182,25 +183,111 @@ const EN: Record<string, string> = {
   "Tópicos a abordar na apresentação": "Topics to cover in the presentation",
 };
 
-function toEnglish(text: string): string {
-  if (!text) return text;
-  return EN[text.trim().replace(/\s+/g, " ")] ?? text;
-}
+/** Brazilian copy: only the stored texts that read as European Portuguese; the rest are shown as stored. */
+const PT_BR: Record<string, string> = {
+  // Template names
+  "Aula Invertida (Flipped)": "Sala de Aula Invertida",
+  "Teste Formal": "Prova Formal",
+  "Ficha com Registo e Reflexão": "Lista com Registro e Reflexão",
+  "Ficha Essencial": "Lista Essencial",
+  "Ficha por Etapas": "Lista por Etapas",
+  "Ficha por Grupos": "Lista em Partes",
+
+  // Template descriptions
+  "Estrutura formal de teste de avaliação com grupos de questões":
+    "Estrutura formal de prova, com as questões organizadas em partes",
+  "Estrutura com blocos de trabalho e momentos de registo, síntese ou reflexão ao longo da ficha.":
+    "Blocos de trabalho com momentos de registro, síntese ou reflexão ao longo da lista.",
+  "Estrutura equilibrada com ativação, desenvolvimento e fecho, adaptável a qualquer finalidade da ficha.":
+    "Estrutura equilibrada com ativação, desenvolvimento e fechamento, que se adapta a qualquer objetivo da lista.",
+  "Organiza a ficha em fases curtas e progressivas, útil para gerir ritmo, autonomia ou recolha de evidências.":
+    "Organiza a lista em etapas curtas e progressivas, útil para administrar o ritmo, a autonomia ou a coleta de evidências.",
+  "Estrutura em partes independentes, útil para separar momentos, focos ou conjuntos de tarefas numa mesma ficha.":
+    "Partes independentes, úteis para separar momentos, focos ou conjuntos de tarefas em uma mesma lista.",
+
+  // Section titles
+  "Cabeçalho ou Enquadramento": "Cabeçalho e Contextualização",
+  "Extensão": "Aprofundamento",
+  "Fecho": "Fechamento",
+  "Fecho Técnico": "Fechamento Técnico",
+  "Grupo A": "Parte A",
+  "Grupo B": "Parte B",
+  "Grupo I - Escolha Múltipla": "Parte I - Múltipla Escolha",
+  "Grupo II - Desenvolvimento": "Parte II - Questões Dissertativas",
+  "Grupo III - Problema/Caso": "Parte III - Problema/Estudo de Caso",
+  "Índice/Agenda": "Roteiro",
+  "Objetivo da Ficha": "Objetivo da Lista",
+  "Ponto de Situação": "Balanço Parcial",
+  "Questão Orientadora": "Pergunta Norteadora",
+  "Questões de Escolha Múltipla": "Questões de Múltipla Escolha",
+  "Registo Final": "Registro Final",
+
+  // Section descriptions
+  "Conteúdos para estudo autónomo antes da aula": "Conteúdos para estudo autônomo antes da aula",
+  "Discussão e clarificação de conceitos": "Discussão e esclarecimento de conceitos",
+  "Enquadramento do tema com uma situação, texto curto, dado, observação ou problema de partida":
+    "Apresentação do tema com uma situação, texto curto, dado, observação ou problema inicial",
+  "Enquadramento real e relevante": "Contexto real e relevante",
+  "Finalidade principal da ficha e foco de aprendizagem, ajustados ao objetivo da ficha":
+    "Finalidade principal da lista e foco de aprendizagem",
+  "Identificação da ficha e informação inicial relevante para o trabalho":
+    "Identificação da lista e informações iniciais importantes para o trabalho",
+  "Incluir APENAS se o professor pedir explicitamente. Quando presente: critérios de correção, soluções ou notas de acompanhamento. Reflexão final pode ser incluída sem pedido explícito quando fizer sentido para o tipo de ficha.":
+    "Incluída APENAS se o professor pedir explicitamente. Quando presente: critérios de correção, soluções ou notas de acompanhamento. Uma reflexão final pode entrar sem pedido explícito quando fizer sentido para o tipo de lista.",
+  "Incluir APENAS se o professor pedir explicitamente. Quando presente: soluções, critérios de correção ou pistas de acompanhamento, claramente separados das tarefas.":
+    "Incluída APENAS se o professor pedir explicitamente. Quando presente: soluções, critérios de correção ou dicas de acompanhamento, bem separados das tarefas.",
+  "Incluir APENAS se o professor pedir explicitamente. Quando presente: soluções, critérios de correção ou pistas de acompanhamento no final do documento, claramente separados das perguntas.":
+    "Incluída APENAS se o professor pedir explicitamente. Quando presente: soluções, critérios de correção ou dicas de acompanhamento no final do documento, bem separados das perguntas.",
+  "Informações do teste (nome, data, duração, cotações)": "Informações da prova (nome, data, duração, pontuação)",
+  "Momento de registo intermédio, reflexão, revisão ou síntese breve":
+    "Momento de registro intermediário, reflexão, revisão ou síntese breve",
+  "Núcleo com várias perguntas, exercícios ou itens concretos, numerados e alinhados com o objetivo da ficha. O número de itens deve resultar da combinação do ano de escolaridade com a duração: anos iniciais (1.º-4.º) precisam sempre de menos itens e mais simples, anos superiores (10.º-12.º) admitem mais itens e maior profundidade. Variar formatos como completar, ligar, ordenar, assinalar, legendar, responder ou justificar brevemente.":
+    "A parte central: perguntas, exercícios ou itens concretos, numerados e alinhados com o objetivo da lista. A quantidade de itens depende do ano escolar e da duração: do 1º ao 4º ano, sempre menos itens e mais simples; no ensino médio, mais itens e mais profundidade. Varia os formatos: completar, ligar, ordenar, assinalar, legendar, responder ou justificar brevemente.",
+  "Orientações comuns a toda a ficha, incluindo tempo e forma de resposta quando aplicável":
+    "Orientações para toda a lista, incluindo o tempo e a forma de resposta, quando for o caso",
+  "Orientações para realizar a ficha, rever respostas e gerir o tempo":
+    "Orientações para fazer a lista, revisar as respostas e administrar o tempo",
+  "Partilha e exposição dos resultados": "Compartilhamento e apresentação dos resultados",
+  "Perguntas curtas e diretas. Se houver pedido explicito do professor, pode incluir ate 1-2 abertas simples em contextos NEE/1.o-4.o ano.":
+    "Perguntas curtas e diretas. Se o professor pedir explicitamente, pode incluir 1 ou 2 perguntas abertas simples para alunos da educação especial ou do 1º ao 4º ano.",
+  "Primeiro bloco de trabalho com tarefas mais guiadas ou de recolha de evidências":
+    "Primeiro bloco de trabalho com tarefas mais guiadas ou de coleta de evidências",
+  "Primeiro conjunto de tarefas ou questões com maior apoio e enquadramento":
+    "Primeiro conjunto de tarefas ou questões, com mais apoio e contextualização",
+  "Propósito da ficha, critérios de sucesso e foco principal do trabalho":
+    "Propósito da lista, critérios de sucesso e foco principal do trabalho",
+  "Questões de seleção de resposta": "Questões de resposta fechada",
+  "Secção condicional: converter para resposta curta direta quando nao houver pedido explicito do professor.":
+    "Seção condicional: vira resposta curta e direta, a menos que o professor peça explicitamente outra coisa.",
+  "Secção condicional: usar apenas com pedido explicito de questoes abertas. Em NEE/1.o-4.o ano, limitar a 1-2 abertas curtas e diretas.":
+    "Seção condicional: só entra quando o professor pede questões abertas. Para alunos da educação especial ou do 1º ao 4º ano, no máximo 1 ou 2 questões abertas curtas e diretas.",
+  "Síntese, desafio final, reflexão ou verificação breve da aprendizagem, sem substituir o núcleo principal da ficha":
+    "Síntese, desafio final, reflexão ou verificação rápida da aprendizagem, sem substituir a parte central da lista",
+  "Tarefa curta para recordar, observar, explorar ou diagnosticar o ponto de partida, com 1 a 3 perguntas ou estímulos diretos que ajudem os alunos a entrar no tema":
+    "Tarefa curta para relembrar, observar, explorar ou diagnosticar o ponto de partida, com 1 a 3 perguntas ou estímulos diretos que ajudem os alunos a entrar no tema",
+};
+
+const COPY: Partial<Record<Locale, Record<string, string>>> = { en: EN, "pt-BR": PT_BR };
+
+/** Every stored system-template text, for tests (the English map lists them all). */
+export const STORED_SYSTEM_TEMPLATE_TEXTS = Object.keys(EN);
 
 /** Shows a system template in the interface language; other templates are returned untouched. */
 export function localizeSystemTemplate(
   template: DocumentTemplate,
   locale: Locale | null,
 ): DocumentTemplate {
-  if (locale !== "en" || !template.isSystem) return template;
+  const copy = locale ? COPY[locale] : undefined;
+  if (!copy || !template.isSystem) return template;
+  const localize = (text: string) => (text && copy[text.trim().replace(/\s+/g, " ")]) || text;
   return {
     ...template,
-    name: toEnglish(template.name),
-    description: toEnglish(template.description),
+    name: localize(template.name),
+    description: localize(template.description),
     sections: template.sections.map((section) => ({
       ...section,
-      title: toEnglish(section.title),
-      description: toEnglish(section.description),
+      title: localize(section.title),
+      description: localize(section.description),
     })),
   };
 }
