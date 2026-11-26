@@ -69,7 +69,7 @@ describe("pt-BR catalogue", () => {
 
   it("uses Brazilian words, not the European ones", () => {
     const EUROPEAN =
-      /(?<![A-Za-zÀ-ÿ])(ficheiros?|ecrã|utilizador(es)?|partilhar|telemóvel|palavra-passe|Aprendizagens Essenciais|objetivos das AE)(?![A-Za-zÀ-ÿ])/i;
+      /(?<![A-Za-zÀ-ÿ])(ficheiros?|ecrãs?|utilizador(es)?|partilhar|telemóve(l|is)|palavra-passe|equipas?|contactos?|registos?|por preparar|a acompanhar|Aprendizagens Essenciais|objetivos das AE)(?![A-Za-zÀ-ÿ])/i;
     // Controls only shown to Portuguese teachers may name the Portuguese curriculum.
     const PT_ONLY = new Set(["documentCreation.sourcePicker.includeAe"]);
     const offenders = [...overlay.entries()]

@@ -149,7 +149,7 @@ describe("CheckInOutcomeStep", () => {
     const html = render(["o2"]);
     expect(html.match(/role="checkbox"/g)).toHaveLength(2);
     expect(html).toContain('title="Ler com fluência"');
-    expect(html).toContain("line-clamp-2");
+    expect(html).not.toContain("line-clamp");
     const rows = html.split("<li").slice(1);
     expect(rows[0]).toContain('aria-checked="false"');
     expect(rows[1]).toContain('aria-checked="true"');

@@ -3036,7 +3036,7 @@
   "schoolDirection": {
     "states": {
       "on_track": "Em dia",
-      "watch": "A acompanhar",
+      "watch": "Em atenção",
       "behind": "Atrasada",
       "no_records": "Sem registros",
       "not_started": "Ainda sem aulas",
@@ -3073,7 +3073,7 @@
       "execution": "Aulas em dia",
       "executionHint": "das previstas até hoje",
       "onTrack": "Em dia",
-      "watch": "A acompanhar",
+      "watch": "Em atenção",
       "behind": "Atrasadas",
       "noRecords": "Sem registros",
       "classes": "{count, plural, one {turma} other {turmas}}"
@@ -3198,8 +3198,8 @@
       "departmentFigure": "{onPlan} de {past} aulas · {percent}%",
       "reason": "Motivo: {note}",
       "byDepartmentEmpty": "Ainda não há registros de aulas para calcular a execução.",
-      "followUp": "3. Turmas a acompanhar",
-      "followUpEmpty": "Nenhuma turma a acompanhar: todas as turmas com registros estão em dia.",
+      "followUp": "3. Turmas em atenção",
+      "followUpEmpty": "Nenhuma turma em atenção: todas as turmas com registros estão em dia.",
       "reinforce": "4. Habilidades a reforçar"
     }
   },
@@ -3625,7 +3625,7 @@
     "month": {
       "lessonsCount": "{count, plural, one {# aula} other {# aulas}}",
       "completedCount": "{count, plural, one {# pronta} other {# prontas}}",
-      "pendingCount": "{count, plural, one {# por preparar} other {# por preparar}}",
+      "pendingCount": "{count, plural, one {# para preparar} other {# para preparar}}",
       "emptyTitle": "Sem aulas neste mês",
       "emptyDescription": "Não há aulas marcadas para este mês.",
       "goToWeek": "Ver semana"
@@ -4141,8 +4141,7 @@
     "detailTopic": "Tema",
     "detailChange": "Muda",
     "detailOutcomes": "Habilidades",
-    "topicKept": "permanece",
-    "outcomeFull": "Ver o texto completo"
+    "topicKept": "permanece"
   },
   "adminPromos": {
     "title": "Links de oferta",

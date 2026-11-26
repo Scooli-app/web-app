@@ -79,11 +79,11 @@ describe("CheckInOutcomeStep with many outcomes", () => {
     expect(text()).not.toContain("outcomesShowMore");
   });
 
-  it("clamps a long text to two lines with the full text in the tooltip", async () => {
+  it("shows a long text in full, wrapping instead of cutting it", async () => {
     await mount();
     const first = cards()[0];
-    expect(first.getAttribute("title")).toBe(LONG);
-    expect(first.querySelector(".line-clamp-2")).not.toBeNull();
+    expect(first.textContent).toContain(LONG);
+    expect(first.querySelector("[class*='line-clamp'], .truncate")).toBeNull();
     expect(first.innerHTML).toContain("[overflow-wrap:anywhere]");
   });
 

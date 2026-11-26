@@ -260,7 +260,7 @@ export function NextStepsView({ items, showTurma, isPro = false, busyKey, onActi
             >
               <p className="flex min-w-0 items-center gap-2 text-sm">
                 <Icon className={cn("h-4 w-4 shrink-0", style.tone)} aria-hidden />
-                <span className="min-w-0 line-clamp-2">
+                <span className="min-w-0 wrap-anywhere">
                   {text(item)}
                   {showTurma && item.turmaTitle ? (
                     <span className="text-muted-foreground"> · {item.turmaTitle}</span>

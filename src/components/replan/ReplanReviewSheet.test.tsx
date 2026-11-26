@@ -148,7 +148,9 @@ describe("ReplanReviewSheet with 14 lessons", () => {
     expect(details?.textContent).toContain("mantém-se");
     expect(details?.textContent).toContain("Acrescenta: exercício orientadoPassa para a aula seguinte.");
     expect(details?.textContent).toContain("+ Novo");
-    expect(details?.querySelectorAll('button[aria-label="Ver o texto completo"]')).toHaveLength(2);
+    // Outcomes wrap in full (long BNCC habilidades included), with no hover-only button to read them.
+    expect(details?.querySelectorAll("ul li .truncate")).toHaveLength(0);
+    expect(details?.querySelectorAll("ul li .wrap-anywhere").length).toBeGreaterThan(0);
   });
 
   it("labels a merged lesson with a new title as a merge, not as a new topic", async () => {

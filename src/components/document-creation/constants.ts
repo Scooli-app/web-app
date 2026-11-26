@@ -102,9 +102,13 @@ export function translateSubject(englishValue: string): string {
   return subject ? translateSubjectLabel(subject.id) : englishValue;
 }
 
-/** Localized display label for a subject, keyed by its stable id. */
+/**
+ * Localized display label for a subject, keyed by its stable id. Brazilian
+ * subjects use their pt-BR display name as id, so an id outside the Portuguese
+ * catalog is already its label.
+ */
 export function translateSubjectLabel(id: string): string {
-  return translate(`documentCreation.options.subjects.${id}`);
+  return SUBJECTS.some((s) => s.id === id) ? translate(`documentCreation.options.subjects.${id}`) : id;
 }
 
 /** Maps a subject's Portuguese `category` grouping key to a stable slug used for translation. */

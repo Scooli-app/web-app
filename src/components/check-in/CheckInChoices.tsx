@@ -270,9 +270,9 @@ export function CheckInOutcomeStep({
                     <Checkbox checked={checked} onCheckedChange={() => onToggle(outcome.id)} className="mt-0.5" />
                     <span className="min-w-0 flex-1">
                       {topic && (
-                        <span className="block truncate text-xs text-muted-foreground">{topic}</span>
+                        <span className="block text-xs text-muted-foreground [overflow-wrap:anywhere]">{topic}</span>
                       )}
-                      <span className="line-clamp-2 leading-snug [overflow-wrap:anywhere]">{outcome.text}</span>
+                      <span className="block leading-snug [overflow-wrap:anywhere]">{outcome.text}</span>
                     </span>
                   </label>
                 </li>

@@ -124,10 +124,11 @@ export function normalizeMathMarkdown(content: string): string {
 // Line pipeline
 // ---------------------------------------------------------------------------
 
-function normalizeLine(line: string, displayOpened: { value: boolean }): string {
-  if (!line.includes("$") && !line.includes("\\")) {
-    return line;
+function normalizeLine(rawLine: string, displayOpened: { value: boolean }): string {
+  if (!rawLine.includes("$") && !rawLine.includes("\\")) {
+    return rawLine;
   }
+  const line = convertLatexDelimiters(rawLine);
   const segments: Segment[] = [];
   for (const segment of scan(line, displayOpened)) {
     if (segment.type === "text") segments.push(...wrapBareLatex(segment.text));
@@ -141,6 +142,28 @@ function normalizeLine(line: string, displayOpened: { value: boolean }): string 
       return `$$${fixBlanks(segment.text)}${segment.closed ? "$$" : ""}`;
     })
     .join("");
+}
+
+/** `\(…\)` and `\[…\]` on one line; an escaped backslash (`\\(`) is not an opener. */
+const PAREN_MATH = /(?<!\\)\\\((.+?)(?<!\\)\\\)/g;
+const BRACKET_MATH = /(?<!\\)\\\[(.+?)(?<!\\)\\\]/g;
+const LATEX_COMMAND = /\\[A-Za-z]/;
+
+/**
+ * The model sometimes writes `\(…\)` / `\[…\]` instead of `$…$` / `$$…$$` (lesson plans prepared in
+ * batch from the calendar, for one). Left alone, the bare `\frac` inside is wrapped in `$…$` and the
+ * teacher sees the `\(` `\)` around the fraction. A markdown-escaped bracket or parenthesis around
+ * prose (`\[1\]`, `\(nota\)`) is not maths, so it is converted only when its content looks like maths.
+ */
+function convertLatexDelimiters(line: string): string {
+  if (!line.includes("\\(") && !line.includes("\\[")) return line;
+  return line
+    .replace(BRACKET_MATH, (whole, inner: string) =>
+      LATEX_COMMAND.test(inner) || /[=^_]/.test(inner) ? `$$${inner.trim()}$$` : whole,
+    )
+    .replace(PAREN_MATH, (whole, inner: string) =>
+      LATEX_COMMAND.test(inner) || !/[A-Za-zÀ-ÿ]{2,}/.test(inner) ? `$${inner.trim()}$` : whole,
+    );
 }
 
 /** Splits a line into text and maths, repairing mangled or missing closing delimiters. */

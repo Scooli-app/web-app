@@ -18,7 +18,7 @@ export function AeChip({ outcome, onRemove, onPaper }: { outcome: AeOutcome | nu
     <span
       title={outcome && !unavailable ? outcome.text : undefined}
       className={cn(
-        "inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 font-sans text-[11px] font-medium leading-4",
+        "inline-flex max-w-full items-start gap-1 rounded-xl border px-2 py-0.5 font-sans text-[11px] font-medium leading-4",
         // On the sheet it is a teacher's note, not an answer: grey, so it doesn't read like the green correct answers.
         unavailable ? "border-amber-300 bg-amber-50 text-amber-800" : onPaper ? "border-neutral-200 bg-neutral-100 text-neutral-600" : "border-emerald-200 bg-emerald-50 text-emerald-800",
         !onPaper && (unavailable
@@ -28,7 +28,7 @@ export function AeChip({ outcome, onRemove, onPaper }: { outcome: AeOutcome | nu
       )}
     >
       <span className="shrink-0 font-semibold">{t("prefix")} ·</span>
-      <span className="truncate">{label}</span>
+      <span className="min-w-0 wrap-anywhere">{label}</span>
       {onRemove && (
         <button
           type="button"

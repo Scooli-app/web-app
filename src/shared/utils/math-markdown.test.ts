@@ -152,3 +152,29 @@ describe("normalizeMathMarkdown — bare dollar amounts", () => {
     expect(normalizeMathMarkdown("Write $5$ and $2x+1$.")).toBe("Write $5$ and $2x+1$.");
   });
 });
+
+// Lines of the batch-prepared lesson plan a99ff307 (6º ano, "Operações com Números Racionais",
+// 2026-11-25): the teacher saw "\(" and "\)" around every fraction.
+describe("normalizeMathMarkdown — \\( \\) and \\[ \\] delimiters (lesson plan a99ff307)", () => {
+  it.each([
+    [
+      "Números racionais: números que podem ser expressos na forma \\( \\frac{a}{b} \\), onde \\( a \\) é um inteiro.",
+      "Números racionais: números que podem ser expressos na forma $\\frac{a}{b}$, onde $a$ é um inteiro.",
+    ],
+    ["1. \\( \\frac{3}{8} + \\frac{1}{8} \\)", "1. $\\frac{3}{8} + \\frac{1}{8}$"],
+    [
+      "Exemplo: \\[ \\frac{2}{5} + \\frac{1}{5} = \\frac{3}{5} \\]",
+      "Exemplo: $$\\frac{2}{5} + \\frac{1}{5} = \\frac{3}{5}$$",
+    ],
+  ])("%s", (input, expected) => {
+    expect(normalizeMathMarkdown(input)).toBe(expected);
+  });
+
+  it.each([
+    "Ver a nota \\[1\\] no fim.",
+    "Uma frase \\(entre parênteses\\) escapada.",
+    "Uma barra escapada \\\\(não é maths\\\\).",
+  ])("leaves escaped brackets and parentheses around prose alone: %s", (input) => {
+    expect(normalizeMathMarkdown(input)).toBe(input);
+  });
+});

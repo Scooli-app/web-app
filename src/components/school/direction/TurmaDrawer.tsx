@@ -237,7 +237,7 @@ function DrawerBody({ detail }: { detail: DirectionTurmaDetail }) {
           <ul className="flex flex-col gap-2 text-sm">
             {difficulties.map((difficulty) => (
               <li key={difficulty.outcomeId} className="min-w-0">
-                <span className="line-clamp-2 wrap-anywhere text-foreground" title={difficulty.text}>
+                <span className="block wrap-anywhere text-foreground">
                   {difficulty.text}
                 </span>
                 <span className="text-xs text-muted-foreground">

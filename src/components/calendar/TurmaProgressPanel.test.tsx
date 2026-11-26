@@ -154,10 +154,9 @@ describe("TurmaProgressView layout", () => {
     expect(html).toContain("lucide-calendar-check");
   });
 
-  it("clamps each flagged outcome to two lines, with the full text as its tooltip", () => {
+  it("shows each flagged outcome in full, wrapping long BNCC text instead of cutting it", () => {
     const html = renderView(progress({ flaggedOutcomes: [outcome(1)] }));
-    expect(html).toContain('title="Aprendizagem 1"');
-    expect(html).toContain("line-clamp-2");
+    expect(html).toContain('<p class="font-medium wrap-anywhere">Aprendizagem 1</p>');
   });
 });
 
