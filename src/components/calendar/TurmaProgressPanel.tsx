@@ -426,7 +426,7 @@ function ReinforceItem({
 
   return (
     <li className="space-y-1.5 text-sm">
-      <p className="line-clamp-2 font-medium" title={outcome.text}>
+      <p className="font-medium wrap-anywhere">
         {outcome.text}
       </p>
       <p className="text-xs text-muted-foreground">

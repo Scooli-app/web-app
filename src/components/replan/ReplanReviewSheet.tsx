@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { replanService } from "@/services/api/replan.service";
 import type { ReplanChange, ReplanItem, ReplanProposal } from "@/shared/types/replan";
 import { cn } from "@/shared/utils/utils";
-import { ChevronDown, ChevronRight, FileText, Info } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -286,25 +286,13 @@ function LessonRow({ item, locale, checked, onToggle, defaultOpen }: LessonRowPr
               <dd className="min-w-0">
                 <ul className="space-y-1.5">
                   {item.after.outcomeTexts.map((text) => (
-                    <li key={text} className="flex min-w-0 items-center gap-1.5">
+                    <li key={text} className="flex min-w-0 items-start gap-1.5">
                       {added.includes(text) && (
                         <span className="shrink-0 rounded bg-emerald-500/15 px-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
                           + {t("newOutcome")}
                         </span>
                       )}
-                      <span className="min-w-0 flex-1 truncate">{text}</span>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            aria-label={t("outcomeFull")}
-                            className="shrink-0 rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          >
-                            <Info className="h-3.5 w-3.5" aria-hidden />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs text-left">{text}</TooltipContent>
-                      </Tooltip>
+                      <span className="min-w-0 flex-1 wrap-anywhere">{text}</span>
                     </li>
                   ))}
                 </ul>
